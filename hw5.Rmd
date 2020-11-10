@@ -93,3 +93,28 @@ homicide_df =
 ```
 
 Info for problems 2+3:
+
+## Question 2
+```{r}
+path_df = 
+  tibble(
+  path = list.files("data2")) %>% 
+  mutate(path = str_c("data2/", path),
+         data = map(...))
+
+read_csv(path_df$path[[1]])
+
+data_1 = read_csv("data2/con_01.csv")
+
+
+```
+Last part is in map(...) statement, need to use that to read_csv across all datasets which are all in path_df.
+This dataset will need to be tidied by time (columns are observation time?)
+Consider using map_df
+
+## Question 3
+simulate, will use t.test and broom::tidy to export results (use sim_mean_sd and other functions in class and modify), need to get estimates and p-vals
+
+compare t.test against mu=0 always I think
+
+hard part is graphs, make sure to filter for where p<.05
