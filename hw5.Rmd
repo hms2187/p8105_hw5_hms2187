@@ -25,7 +25,9 @@ homicide_df =
   select(city_state, resolved) %>% 
   filter(city_state != "Tulsa_AL")
 ```
-DESCRIBE RAW DATA
+This dataset contains information on homicide reports by city. It contains the report date,
+victim's name, age, and sex, and the outcome of the case.
+
 Looking closer, city by city
 
 ```{r}
@@ -68,29 +70,9 @@ results_df %>%
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
 ```
 
+Above code creates a graph showing the proportion of unsolved homicides with 
+confidence intervals by city (in ascending order).
 
-below is just a dift way to redo the above section making a function I think? The whole below chunk can be deleted if desired.
-```{r error = TRUE}
-city_prop_test = function(df) {
-  n_unsolved...
-  n_total ...
-  prop.test(...)
-}
-homicide_df =
-  read_csv("data/homicide-data.csv") %>% 
-  mutate(
-    city_state = str_c(city, state, sep = "_"),
-    resolved = case_when(
-      disposition == "Closed without arrest" ~ "unsolved",
-      disposition == "Open/No arrest" ~ "unsolved",
-      disposition == "Closed by arrest" ~ "solved",
-    )
-  ) %>% 
-  select(city_state, resolved) %>% 
-  filter(city_state != "Tulsa_AL") %>% 
-  nest(data = resolved)
-  
-```
 
 Info for problems 2+3:
 
