@@ -7,6 +7,20 @@ output: github_document
 ```{r}
 library(readr)
 library(tidyverse)
+library(ggplot2)
+
+knitr::opts_chunk$set(
+  fig.width = 6,
+  fig.asp = .6,
+  out.width = "90%"
+)
+theme_set(theme_minimal() + theme(legend.position = "bottom"))
+options(
+  ggplot2.continuous.colour = "viridis",
+  ggplot2.continuous.fill = "viridis"
+)
+scale_colour_discrete = scale_color_viridis_d
+scale_fill_discrete = scale_fill_viridis_d
 ```
 
 Load libraries, read in data
@@ -74,15 +88,21 @@ Above code creates a graph showing the proportion of unsolved homicides with
 confidence intervals by city (in ascending order).
 
 
-Info for problems 2+3:
-
 ## Question 2
+Importing and tidying new dataset.
 ```{r}
 path_df = 
   tibble(
   path = list.files("data2")) %>% 
   mutate(path = str_c("data2/", path),
-         data = map(...))
+         data = map(.x = path, ~read_csv(.x))) %>% 
+  unnest(data) %>% 
+  mutate(ID1 = str_replace(path, ".*/", ""),
+         ID2 = str_replace(ID1, ".csv", "")) %>% 
+  select(-ID1, -path) %>% 
+  select(ID2, everything()) %>% 
+  separate(ID2, c("treatment", "ID"), sep = "([_])", convert = TRUE) %>% 
+  pivot_longer(week_1:week_8, names_to = "time", values_to = "score")
 
 read_csv(path_df$path[[1]])
 
@@ -90,9 +110,22 @@ data_1 = read_csv("data2/con_01.csv")
 
 
 ```
-Last part is in map(...) statement, need to use that to read_csv across all datasets which are all in path_df.
-This dataset will need to be tidied by time (columns are observation time?)
-Consider using map_df
+
+This dataset has been tidied and now contains treatment (control or experimental),
+ID #, and measurements from weeks 1-8.
+Now creating a spaghetti plot showing observations on each subject over time.
+```{r}
+spag_plot = 
+path_df %>% 
+  ggplot(aes(x = time, y = score, group = ID, color = ID)) +
+  geom_point() +
+  geom_line() +
+  facet_grid(. ~ treatment)
+  
+```
+The control group appears to have started with lower scores and remained low.
+The experimental group appears to have started with higher scores and got even
+higher scores over time.
 
 ## Question 3
 simulate, will use t.test and broom::tidy to export results (use sim_mean_sd and other functions in class and modify), need to get estimates and p-vals
