@@ -8,6 +8,7 @@ output: github_document
 library(readr)
 library(tidyverse)
 library(ggplot2)
+library(patchwork)
 
 knitr::opts_chunk$set(
   fig.width = 6,
@@ -21,6 +22,7 @@ options(
 )
 scale_colour_discrete = scale_color_viridis_d
 scale_fill_discrete = scale_fill_viridis_d
+set.seed(123)
 ```
 
 Load libraries, read in data
@@ -104,7 +106,6 @@ path_df =
   separate(ID2, c("treatment", "ID"), sep = "([_])", convert = TRUE) %>% 
   pivot_longer(week_1:week_8, names_to = "time", values_to = "score")
 
-read_csv(path_df$path[[1]])
 
 data_1 = read_csv("data2/con_01.csv")
 
@@ -121,6 +122,7 @@ path_df %>%
   geom_point() +
   geom_line() +
   facet_grid(. ~ treatment)
+spag_plot
   
 ```
 The control group appears to have started with lower scores and remained low.
@@ -128,8 +130,152 @@ The experimental group appears to have started with higher scores and got even
 higher scores over time.
 
 ## Question 3
-simulate, will use t.test and broom::tidy to export results (use sim_mean_sd and other functions in class and modify), need to get estimates and p-vals
 
-compare t.test against mu=0 always I think
+```{r}
+sim_ttest = function(samp_size = 30, mu, sigma = 5) {
+  
+  sim_data = 
+    tibble(
+      x = rnorm(n = samp_size, mean = mu, sd = sigma)
+    ) %>% t.test(alternative = 'two.sided', paired = FALSE, conf.level = 0.95) %>% 
+    broom::tidy() %>% select(estimate, p.value)
+   
+  return(sim_data)
+}
 
-hard part is graphs, make sure to filter for where p<.05
+
+sim_results = 
+  rerun(10, sim_ttest(mu = 0)) %>% 
+  bind_rows()
+
+mu_list =
+  list("mu = 1" = 1,
+       "mu = 2" = 2,
+       "mu = 3" = 3,
+       "mu = 4" = 4,
+       "mu = 5" = 5,
+       "mu = 6" = 6)
+output = vector("list", length = 6)
+for (i in 1:6) {
+  output[[i]] =
+    rerun(10, sim_ttest(mu = mu_list[[i]])) %>% 
+    bind_rows()
+}
+
+mu1_df =
+  output[[1]] %>% 
+  mutate(
+    reject = if_else(p.value < 0.05, 1, 0),
+    mu = 1) %>% 
+      summarise(proportion = mean(reject),
+                mu = 1)
+
+mu2_df =
+  output[[2]] %>% 
+  mutate(
+    reject = if_else(p.value < 0.05, 1, 0),
+    mu = 2) %>% 
+      summarise(proportion = mean(reject),
+                mu = 2)
+
+mu3_df =
+  output[[3]] %>% 
+  mutate(
+    reject = if_else(p.value < 0.05, 1, 0),
+    mu = 3) %>% 
+      summarise(proportion = mean(reject),
+                mu = 3)
+mu4_df =
+  output[[4]] %>% 
+  mutate(
+    reject = if_else(p.value < 0.05, 1, 0),
+    mu = 4) %>% 
+      summarise(proportion = mean(reject),
+                mu = 4)
+mu5_df =
+  output[[5]] %>% 
+  mutate(
+    reject = if_else(p.value < 0.05, 1, 0),
+    mu = 5) %>% 
+      summarise(proportion = mean(reject),
+                mu = 5)
+mu6_df =
+  output[[6]] %>% 
+  mutate(
+    reject = if_else(p.value < 0.05, 1, 0),
+    mu = 6) %>% 
+      summarise(proportion = mean(reject),
+                mu = 6)
+bigmu = full_join(mu1_df, mu2_df, by = c("proportion", "mu"))
+bigmu2 = full_join(bigmu, mu3_df, by = c("proportion", "mu"))
+bigmu3 = full_join(bigmu2, mu4_df, by = c("proportion", "mu"))
+bigmu4 = full_join(bigmu3, mu5_df, by = c("proportion", "mu"))
+bigmu5 = full_join(bigmu4, mu6_df, by = c("proportion", "mu"))
+
+plot1 = 
+  bigmu5 %>% 
+  ggplot(aes(x = mu, y = proportion)) +
+  geom_point() +
+  geom_line()
+```
+
+My goodness that's an ugly way to produce that graph, sorry! It appears that as effect
+size increases (i.e. as our sample mu increases), the proportion of nulls rejected increases (power increases).
+
+
+```{r}
+mu_list =
+  list("mu = 1" = 1,
+       "mu = 2" = 2,
+       "mu = 3" = 3,
+       "mu = 4" = 4,
+       "mu = 5" = 5,
+       "mu = 6" = 6)
+output = vector("list", length = 6)
+for (i in 1:6) {
+  output[[i]] =
+    rerun(10, sim_ttest(mu = mu_list[[i]])) %>% 
+    bind_rows() %>% mutate(mu = i)
+}
+
+q3p2 = 
+  output %>% 
+  bind_rows() %>% 
+  group_by(mu) %>% 
+  summarise(avg_estimate = mean(estimate),
+            mu = mu) %>% 
+  distinct(.keep_all = TRUE)
+
+plot1 =
+  q3p2 %>% 
+  ggplot(aes(x = mu, y = avg_estimate)) +
+  geom_point() +
+  geom_line()+
+  labs(title = "avg muhat estimate by true mu")
+  
+
+q3p2.2 = 
+  output %>% 
+  bind_rows() %>% 
+  filter(p.value < 0.05) %>% 
+  group_by(mu) %>% 
+  summarise(avg_estimate = mean(estimate),
+            mu = mu) %>% 
+  distinct(.keep_all = TRUE)
+
+plot2 =
+  q3p2.2 %>% 
+  ggplot(aes(x = mu, y = avg_estimate)) +
+  geom_point() +
+  geom_line() +
+  labs(title = "avg muhat estimate by true mu where null rejected")
+
+plot1 + plot2
+```
+
+Maybe, the sample average of muhat across tests for which the null is rejected is not
+exactly equal to the true value of mu, but it does seem close. I am running this
+with only 10 datasets at a time instead of 5000, so it is possible that with
+5000 datasets the approximation would be closer. However, since we are filtering
+by those that rejected the null value, it likely means these samples had mean
+estimates far from the true value, making them inherently bad estimates.
