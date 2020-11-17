@@ -145,7 +145,7 @@ sim_ttest = function(samp_size = 30, mu, sigma = 5) {
 
 
 sim_results = 
-  rerun(10, sim_ttest(mu = 0)) %>% 
+  rerun(5000, sim_ttest(mu = 0)) %>% 
   bind_rows()
 
 mu_list =
@@ -158,7 +158,7 @@ mu_list =
 output = vector("list", length = 6)
 for (i in 1:6) {
   output[[i]] =
-    rerun(10, sim_ttest(mu = mu_list[[i]])) %>% 
+    rerun(5000, sim_ttest(mu = mu_list[[i]])) %>% 
     bind_rows()
 }
 
@@ -234,7 +234,7 @@ mu_list =
 output = vector("list", length = 6)
 for (i in 1:6) {
   output[[i]] =
-    rerun(10, sim_ttest(mu = mu_list[[i]])) %>% 
+    rerun(5000, sim_ttest(mu = mu_list[[i]])) %>% 
     bind_rows() %>% mutate(mu = i)
 }
 
